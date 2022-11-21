@@ -3,6 +3,9 @@ import torch.nn.functional as F
 
 
 class LeNet(nn.Module):
+    """
+    输出层计算公式: output = (input - k + 2 * p) / s + 1
+    """
     def __init__(self):
         super(LeNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 16, 5)
