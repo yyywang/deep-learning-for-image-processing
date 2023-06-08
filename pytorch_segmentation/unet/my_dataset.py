@@ -62,3 +62,46 @@ def cat_list(images, fill_value=0):
         pad_img[..., :img.shape[-2], :img.shape[-1]].copy_(img)
     return batched_imgs
 
+
+class CommonDataset:
+    def __init__(self, root: str, train: bool, transforms=None, dataset_name: str = "icdar13") -> None:
+        super(CommonDataset, self).__init__()
+        self.flag = "training" if train else "test"
+        data_root = os.path.join(root, dataset_name, self.flag)
+        assert os.path.exists(data_root), f"path '{data_root}' does not exists."
+        self.transforms = transforms
+        img_names = [i for i in os.listdir(os.path.join(data_root, "images")) 
+                     if os.path.splitext(i)[-1].lower() in (".tif", ".jpg", ".png")]
+        self.img_list = [os.path.join(data_root, "images", i) for i in img_names]
+        if self.flag == "training":
+            self.mask = [os.path.join(data_root, "mask", "%s_GT.bmp" % os.path.splitext(i)[0]) for i in img_names]
+        else:
+            self.mask = [os.path.join(data_root, "mask", "gt_%s.png" % os.path.splitext(i)[0]) for i in img_names]
+        
+        # check files
+        for i in self.mask:
+            if os.path.exists(i) is False:
+                raise FileNotFoundError(f"file {i} does not exists.")
+
+    def __getitem__(self, idx) -> tuple:
+        img = Image.open(self.img_list[idx]).convert('RGB')
+        mask = Image.open(self.mask[idx]).convert('L')
+        mask = np.array(mask) / 255
+
+        # 这里转回PIL的原因是，transforms中是对PIL数据进行处理
+        mask = Image.fromarray(mask)
+
+        if self.transforms is not None:
+            img, mask = self.transforms(img, mask)
+
+        return img, mask
+    
+    def __len__(self) -> int:
+        return len(self.img_list)
+
+    @staticmethod
+    def collate_fn(batch):
+        images, targets = list(zip(*batch))
+        batched_imgs = cat_list(images, fill_value=0)
+        batched_targets = cat_list(targets, fill_value=255)
+        return batched_imgs, batched_targets

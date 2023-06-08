@@ -6,7 +6,7 @@ import torch
 
 from src import UNet
 from train_utils import train_one_epoch, evaluate, create_lr_scheduler
-from my_dataset import DriveDataset
+from my_dataset import DriveDataset, CommonDataset
 import transforms as T
 
 
@@ -71,11 +71,11 @@ def main(args):
     # 用来保存训练以及验证过程中信息
     results_file = "results{}.txt".format(datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
 
-    train_dataset = DriveDataset(args.data_path,
+    train_dataset = CommonDataset(args.data_path,
                                  train=True,
                                  transforms=get_transform(train=True, mean=mean, std=std))
 
-    val_dataset = DriveDataset(args.data_path,
+    val_dataset = CommonDataset(args.data_path,
                                train=False,
                                transforms=get_transform(train=False, mean=mean, std=std))
 
